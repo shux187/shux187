@@ -1,0 +1,44 @@
+name: Solidity Security Scan (Slither)
+
+# Starter static-analysis workflow for a Solidity repo. Copy this file into any repo with a
+# contracts/ directory, adjust the `target` path below, and it will run Slither on every push
+# and PR to main. It fails the build only on high-severity findings so it won't block early
+# development on style nits.
+#
+# Docs: https://github.com/crytic/slither-action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  slither:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        continue-on-error: true
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          target: 'contracts/'
+          slither-args: '--filter-paths "node_modules" --exclude-informational --exclude-low'
+          fail-on: high
+
+      - name: Upload Slither report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slither-report
+          path: ${{ steps.slither.outputs.stdout-file }}
